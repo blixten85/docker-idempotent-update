@@ -1,13 +1,25 @@
 version: 2
 updates:
-  # Uppdatera GitHub Actions som används i dina workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    labels:
+      - "dependencies"
+      - "auto-merge"
+    open-pull-requests-limit: 10
 
-  # Om du har en Dockerfil för att bygga en container
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    labels:
+      - "dependencies"
+      - "auto-merge"
+    open-pull-requests-limit: 5
