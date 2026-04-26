@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_SRC="/home/berduf/.docker"
-BASE_DST="gdrive:backups"
+BASE_SRC="${RCLONE_SRC:-${HOME}/.docker}"
+BASE_DST="${RCLONE_DST:-gdrive:backups}"
 
-LOGDIR="$HOME/.rclone/logs"
+LOGDIR="${RCLONE_LOGDIR:-${HOME}/.rclone/logs}"
 LOGFILE="$LOGDIR/backup_$(date +%Y%m%d_%H%M%S).log"
 LOCKFILE="$LOGDIR/rclone_backup.lock"
 
