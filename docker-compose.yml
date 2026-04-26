@@ -5,15 +5,16 @@ services:
     pull_policy: always
     restart: unless-stopped
     environment:
-      COMPOSE_DIR: /compose
-      COMPOSE_FILE: /compose/docker-compose.yml
-      EMAIL_TO: ${EMAIL_TO:-}
+      EMAIL_TO: ${EMAIL_TO}
       CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
       RCLONE_CONFIG: /config/rclone.conf
+      # Option B: manage containers via compose file (uncomment + uncomment volume below)
+      # COMPOSE_FILE: /compose/docker-compose.yml
     security_opt:
       - no-new-privileges:true
     volumes:
       - ${DOCKER}/docker-maintenance/config:/config
       - ${DOCKER}:/data:ro
-      - ${CONFIG}:/compose:ro
       - /var/run/docker.sock:/var/run/docker.sock
+      # Option B: mount compose directory (uncomment + uncomment COMPOSE_FILE above)
+      # - ${CONFIG}:/compose:ro

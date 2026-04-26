@@ -1,24 +1,30 @@
 #!/bin/bash
 set -euo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-/data}"
-COMPOSE_FILE="${COMPOSE_FILE:-${COMPOSE_DIR}/docker-compose.yml}"
-
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
-get_images() {
-    docker compose -f "$COMPOSE_FILE" images \
-        --format '{{.Service}} {{.Repository}}:{{.Tag}} {{.ID}}' \
-        2>/dev/null | sort || true
-}
-
-cd "$COMPOSE_DIR"
-
 log "=== docker update ==="
-BEFORE=$(get_images)
-docker compose -f "$COMPOSE_FILE" pull
-docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
-AFTER=$(get_images)
+
+BEFORE=$(docker ps --format '{{.Names}} {{.Image}} {{.ImageID}}' 2>/dev/null | sort || true)
+
+if [ -n "${COMPOSE_FILE:-}" ]; then
+    cd "$(dirname "$COMPOSE_FILE")"
+    docker compose -f "$COMPOSE_FILE" pull
+    docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+else
+    docker ps --format '{{.Image}}' | sort -u | xargs -r -I{} docker pull {}
+    docker ps --format '{{.ID}} {{.Image}}' | while read -r CID IMAGE; do
+        RUNNING=$(docker inspect --format='{{.Image}}' "$CID")
+        LATEST=$(docker inspect --format='{{.Id}}' "$IMAGE" 2>/dev/null || echo "")
+        if [ -n "$LATEST" ] && [ "$RUNNING" != "$LATEST" ]; then
+            NAME=$(docker inspect --format='{{.Name}}' "$CID" | tr -d '/')
+            docker restart "$CID" >/dev/null
+            log "Restarted: $NAME"
+        fi
+    done
+fi
+
+AFTER=$(docker ps --format '{{.Names}} {{.Image}} {{.ImageID}}' 2>/dev/null | sort || true)
 
 export DOCKER_CHANGES
 DOCKER_CHANGES=$(diff <(echo "$BEFORE") <(echo "$AFTER") || true)
