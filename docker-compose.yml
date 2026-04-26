@@ -18,3 +18,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/.msmtprc:/root/.msmtprc:ro
       - ${HOME}/.config/rclone:/root/.config/rclone:ro
+      - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
