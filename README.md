@@ -5,25 +5,43 @@
 
 Pull new images and recreate containers — only if changes are detected. Sends an email notification when containers are updated.
 
+## Docker Compose
+
+```bash
+# Run update
+docker compose run --rm update
+
+# Run rclone backup
+docker compose run --rm rclone-backup
+```
+
+Configure via environment variables or a `.env` file:
+
+```env
+EMAIL_TO=you@example.com
+COMPOSE_DIR=~/.config/docker
+LOG_DIR=~/.log
+RCLONE_DST=gdrive:backups
+RCLONE_SRC_DIR=~/.docker
+RCLONE_LOG_DIR=~/.rclone/logs
+```
+
+Run via cron:
+
+```bash
+0 3 * * * cd /path/to/docker-idempotent-update && docker compose run --rm update
+```
+
 ## Docker
 
 ```bash
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ~/.config/docker:/root/.config/docker \
-  -v ~/.log:/root/.log \
-  -v ~/.msmtprc:/root/.msmtprc \
+  -v ~/.config/docker:/config:ro \
+  -v ~/.log:/logs \
+  -e COMPOSE_DIR=/config \
+  -e LOG_FILE=/logs/docker-idempotent.log \
   -e EMAIL_TO=you@example.com \
-  ghcr.io/blixten85/docker-idempotent-update
-```
-
-Run via cron to auto-update nightly:
-
-```bash
-0 3 * * * docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ~/.config/docker:/root/.config/docker \
-  -v ~/.log:/root/.log \
   ghcr.io/blixten85/docker-idempotent-update
 ```
 
