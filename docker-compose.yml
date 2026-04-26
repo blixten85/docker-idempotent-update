@@ -8,16 +8,20 @@ services:
       CRON_SCHEDULE: 0 3 * * *  # minute hour day-of-month month day-of-week
       RCLONE_CONFIG: /config/rclone.conf
       # DRY_RUN: "true"  # set to "true" to test without making any changes
-      # Option A: manage containers via compose file (uncomment + uncomment volume below)
+      # Option A: manage containers via compose file
       COMPOSE_FILE: /compose/docker-compose.yml
+      # If your compose file uses ${DOCKER}, ${CONFIG}, ${TZ} etc. — mount your
+      # main .env file below and set COMPOSE_ENV_FILE to its path inside the container.
+      # COMPOSE_ENV_FILE: /config/host.env
     security_opt:
       - no-new-privileges:true
     volumes:
       - ${DOCKER}/docker-maintenance/config:/config
-      # Option B: use docker socket (comment out COMPOSE_FILE and ${CONFIG} volume above/below)
-      # - /var/run/docker.sock:/var/run/docker.sock
-      # Option A: mount compose directory (comment out to use Option B)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Option A: mount compose directory
       - ${CONFIG}:/compose:ro
+      # Option A + COMPOSE_ENV_FILE: uncomment and set path to your main .env file
+      # - /path/to/.env:/config/host.env:ro
     networks:
       - lsio
 

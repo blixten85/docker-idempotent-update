@@ -15,11 +15,20 @@ BEFORE=$(docker ps --format '{{.Names}} {{.Image}} {{.ImageID}}' 2>/dev/null | s
 
 if [ -n "${COMPOSE_FILE:-}" ]; then
     cd "$(dirname "$COMPOSE_FILE")"
+
+    ENV_FILE_ARG=""
+    if [ -n "${COMPOSE_ENV_FILE:-}" ] && [ -f "$COMPOSE_ENV_FILE" ]; then
+        ENV_FILE_ARG="--env-file $COMPOSE_ENV_FILE"
+        log "Using env file: $COMPOSE_ENV_FILE"
+    fi
+
     if [ "$DRY_RUN" = "true" ]; then
-        log "[dry-run] would run: docker compose -f $COMPOSE_FILE pull && up -d --remove-orphans"
+        log "[dry-run] would run: docker compose -f $COMPOSE_FILE $ENV_FILE_ARG pull && up -d --remove-orphans"
     else
-        docker compose -f "$COMPOSE_FILE" pull
-        docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+        # shellcheck disable=SC2086
+        docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG pull
+        # shellcheck disable=SC2086
+        docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG up -d --remove-orphans
     fi
 else
     if [ "$DRY_RUN" = "true" ]; then
