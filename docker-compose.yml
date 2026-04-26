@@ -10,6 +10,8 @@ services:
       RCLONE_SRC: /docker
       RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
       EMAIL_TO: ${EMAIL_TO:-}
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ${COMPOSE_DIR:-~/.config/docker}:/config:ro
       - ${DOCKER_DIR:-~/.docker}:/docker:ro
