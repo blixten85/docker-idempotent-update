@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_SRC="${RCLONE_SRC:-${HOME}/.docker}"
+BASE_SRC="${RCLONE_SRC:-/data}"
 BASE_DST="${RCLONE_DST:-gdrive:backups}"
 EMAIL_TO="${EMAIL_TO:-}"
 DOCKER_CHANGES="${DOCKER_CHANGES:-}"

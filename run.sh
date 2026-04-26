@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-${HOME}/.config/docker}"
+COMPOSE_DIR="${COMPOSE_DIR:-/data}"
 COMPOSE_FILE="${COMPOSE_FILE:-${COMPOSE_DIR}/docker-compose.yml}"
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }

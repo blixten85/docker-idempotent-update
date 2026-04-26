@@ -3,19 +3,19 @@ services:
     image: ghcr.io/blixten85/docker-idempotent-update:latest
     container_name: docker-maintenance
     pull_policy: always
-    restart: "no"
+    restart: unless-stopped
     environment:
-      COMPOSE_DIR: /config
-      COMPOSE_FILE: /config/docker-compose.yml
-      RCLONE_SRC: /docker
+      COMPOSE_DIR: /data
+      COMPOSE_FILE: /data/docker-compose.yml
+      RCLONE_SRC: /data
       RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
       EMAIL_TO: ${EMAIL_TO:-}
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
+      DOCKER_CONFIG: /config/docker
+      RCLONE_CONFIG: /config/rclone.conf
     security_opt:
       - no-new-privileges:true
     volumes:
-      - ${COMPOSE_DIR:-~/.config/docker}:/config:ro
-      - ${DOCKER_DIR:-~/.docker}:/docker:ro
+      - ./config:/config:ro
+      - ${DOCKER_DIR}:/data:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/msmtprc:/etc/msmtprc:ro
-      - ${CONFIG_HOME}/.config/rclone:/root/.config/rclone:ro
-      - ${CONFIG_HOME}/.docker/config.json:/root/.docker/config.json:ro
