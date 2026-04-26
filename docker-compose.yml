@@ -5,8 +5,8 @@ services:
     pull_policy: always
     restart: unless-stopped
     environment:
-      COMPOSE_DIR: /data
-      COMPOSE_FILE: /data/docker-compose.yml
+      COMPOSE_DIR: /compose
+      COMPOSE_FILE: /compose/docker-compose.yml
       RCLONE_SRC: /data
       RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
       EMAIL_TO: ${EMAIL_TO:-}
@@ -16,6 +16,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - ${DOCKER_DIR}/docker-maintenance/config:/config:ro
-      - ${DOCKER_DIR}:/data:ro
+      - ${DOCKER}/docker-maintenance/config:/config:ro
+      - ${DOCKER}:/data:ro
+      - ${CONFIG}:/compose:ro
       - /var/run/docker.sock:/var/run/docker.sock
