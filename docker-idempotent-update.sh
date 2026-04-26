@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-COMPOSE_DIR="${HOME}/.config/docker"
-COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.yml"
-LOG_FILE="${HOME}/.log/docker-idempotent.log"
-LOCK_FILE="${HOME}/.log/docker-idempotent.lock"
-EMAIL_TO="root@denied.se"
+COMPOSE_DIR="${COMPOSE_DIR:-${HOME}/.config/docker}"
+COMPOSE_FILE="${COMPOSE_FILE:-${COMPOSE_DIR}/docker-compose.yml}"
+LOG_FILE="${LOG_FILE:-${HOME}/.log/docker-idempotent.log}"
+LOCK_FILE="${LOCK_FILE:-${HOME}/.log/docker-idempotent.lock}"
+EMAIL_TO="${EMAIL_TO:-}"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -19,7 +19,9 @@ trap 'rm -f "$LOCK_FILE"' EXIT
 
 # --- Helpers ---
 log() { echo "[$(date)] $1" | tee -a "$LOG_FILE"; }
-send_mail() { echo -e "Subject: $1\n\n$2" | msmtp "$EMAIL_TO" || true; }
+send_mail() {
+    [ -n "$EMAIL_TO" ] && echo -e "Subject: $1\n\n$2" | msmtp "$EMAIL_TO" || true
+}
 get_images() {
     docker compose -f "$COMPOSE_FILE" images --format '{{.Service}} {{.Repository}}:{{.Tag}} {{.ID}}' 2>/dev/null | sort || true
 }
