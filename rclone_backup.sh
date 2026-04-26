@@ -24,6 +24,7 @@ RCLONE_FLAGS=(
   --delete-during
 )
 
+DRY_RUN="${DRY_RUN:-false}"
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
 send_mail() {
@@ -52,6 +53,10 @@ for APP_DIR in "$BASE_SRC"/*/; do
         DEST="$BASE_DST/$APP/$NAME"
         SYNCED=false
 
+        if [ "$DRY_RUN" = "true" ]; then
+            log "[dry-run] would sync: $DIR -> $DEST"
+            SYNCED=true
+        else
         for i in 1 2 3; do
             if rclone sync "$DIR" "$DEST" "${RCLONE_FLAGS[@]}" 2>&1; then
                 SYNCED=true
@@ -60,6 +65,7 @@ for APP_DIR in "$BASE_SRC"/*/; do
             log "retry $i: $APP/$NAME"
             sleep 15
         done
+        fi
 
         if $SYNCED; then
             log "ok: $APP/$NAME"

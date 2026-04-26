@@ -7,6 +7,7 @@ services:
       EMAIL_TO: ${EMAIL_TO}
       CRON_SCHEDULE: 0 3 * * *  # minute hour day-of-month month day-of-week
       RCLONE_CONFIG: /config/rclone.conf
+      # DRY_RUN: "true"  # set to "true" to test without making any changes
       # Option A: manage containers via compose file (uncomment + uncomment volume below)
       COMPOSE_FILE: /compose/docker-compose.yml
     security_opt:
