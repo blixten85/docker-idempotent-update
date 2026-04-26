@@ -4,30 +4,6 @@ set -euo pipefail
 BASE_SRC="${RCLONE_SRC:-${HOME}/.docker}"
 BASE_DST="${RCLONE_DST:-gdrive:backups}"
 
-LOGDIR="${RCLONE_LOGDIR:-${HOME}/.rclone/logs}"
-LOGFILE="$LOGDIR/backup_$(date +%Y%m%d_%H%M%S).log"
-LOCKFILE="$LOGDIR/rclone_backup.lock"
-
-mkdir -p "$LOGDIR"
-
-log() {
-  echo "[$(date '+%H:%M:%S')] $1" | tee -a "$LOGFILE"
-}
-
-# -------------------------
-# SAFE LOCK
-# -------------------------
-if [ -f "$LOCKFILE" ] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
-  log "Backup already running — exit"
-  exit 1
-fi
-
-echo $$ > "$LOCKFILE"
-trap 'rm -f "$LOCKFILE"' EXIT
-
-# -------------------------
-# RCLONE FLAGS
-# -------------------------
 RCLONE_FLAGS=(
   --fast-list
   --transfers 4
@@ -43,67 +19,46 @@ RCLONE_FLAGS=(
   --delete-during
 )
 
-log "=== STRICT BACKUP START ==="
+log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
-# -------------------------
-# LOOP APPS (DEPTH 1 ONLY)
-# -------------------------
-for APP_DIR in "$BASE_SRC"/*; do
-  [ -d "$APP_DIR" ] || continue
+FAILED=0
 
-  APP=$(basename "$APP_DIR")
-  APP_CLEAN=$(echo "$APP" | tr '[:upper:]' '[:lower:]')
+log "=== backup start: $BASE_SRC -> $BASE_DST ==="
 
-  log "SCAN: $APP_CLEAN"
+for APP_DIR in "$BASE_SRC"/*/; do
+    [ -d "$APP_DIR" ] || continue
+    APP=$(basename "$APP_DIR" | tr '[:upper:]' '[:lower:]')
 
-  # -------------------------
-  # ONLY EXACT BACKUP FOLDERS (DEPTH MAX 2)
-  # -------------------------
-  while IFS= read -r DIR; do
+    while IFS= read -r DIR; do
+        [ -d "$DIR" ] || continue
+        NAME=$(basename "$DIR")
+        case "${NAME,,}" in backup|backups) ;; *) continue ;; esac
 
-    [ -d "$DIR" ] || continue
+        REL="${DIR#$APP_DIR}"
+        DEST="$BASE_DST/$APP/$NAME"
 
-    REL="${DIR#$APP_DIR/}"
+        log "sync: $APP/$NAME"
 
-    # enforce max depth 2
-    DEPTH=$(echo "$REL" | awk -F/ '{print NF}')
-    if [ "$DEPTH" -gt 2 ]; then
-      continue
-    fi
+        SYNCED=false
+        for i in 1 2 3; do
+            if rclone sync "$DIR" "$DEST" "${RCLONE_FLAGS[@]}" 2>&1; then
+                SYNCED=true
+                break
+            fi
+            log "retry $i failed: $APP/$NAME"
+            sleep 15
+        done
 
-    NAME=$(basename "$DIR")
+        if $SYNCED; then
+            log "ok: $APP/$NAME"
+        else
+            log "FAILED: $APP/$NAME"
+            FAILED=1
+        fi
 
-    # STRICT MATCH ONLY
-    case "${NAME,,}" in
-      backup|backups)
-        ;;
-      *)
-        continue
-        ;;
-    esac
-
-    log "SYNC: $APP_CLEAN -> $REL"
-
-    if ! ls -A "$DIR" >/dev/null 2>&1; then
-      log "SKIP (empty): $DIR"
-      continue
-    fi
-
-    DEST="$BASE_DST/$APP_CLEAN/$REL"
-
-    for i in 1 2 3; do
-      rclone sync "$DIR" "$DEST" \
-        "${RCLONE_FLAGS[@]}" \
-        >> "$LOGFILE" 2>&1 && break
-
-      log "Retry $i failed: $APP_CLEAN/$REL"
-      sleep 15
-    done
-
-    log "OK: $APP_CLEAN/$REL"
-
-  done < <(find "$APP_DIR" -maxdepth 2 -type d 2>/dev/null)
-
+    done < <(find "$APP_DIR" -maxdepth 2 -type d 2>/dev/null)
 done
 
-log "=== STRICT BACKUP COMPLETE ==="
+log "=== backup complete ==="
+
+exit $FAILED
