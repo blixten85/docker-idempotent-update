@@ -1,45 +1,33 @@
 #!/bin/bash
 set -euo pipefail
 
-EMAIL_TO="${EMAIL_TO:-}"
+COMPOSE_DIR="${COMPOSE_DIR:-${HOME}/.config/docker}"
+COMPOSE_FILE="${COMPOSE_FILE:-${COMPOSE_DIR}/docker-compose.yml}"
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 
-send_mail() {
-    [ -n "$EMAIL_TO" ] || return 0
-    echo -e "Subject: $1\n\n$2" | msmtp "$EMAIL_TO" 2>/dev/null || true
+get_images() {
+    docker compose -f "$COMPOSE_FILE" images \
+        --format '{{.Service}} {{.Repository}}:{{.Tag}} {{.ID}}' \
+        2>/dev/null | sort || true
 }
 
-RCLONE_STATUS=0
-DOCKER_CHANGES=""
-DOCKER_STATUS=0
-
-log "=== rclone backup ==="
-rclone_backup.sh || RCLONE_STATUS=$?
+cd "$COMPOSE_DIR"
 
 log "=== docker update ==="
-DOCKER_CHANGES=$(docker-idempotent-update.sh) || DOCKER_STATUS=$?
-[ -n "$DOCKER_CHANGES" ] && echo "$DOCKER_CHANGES"
+BEFORE=$(get_images)
+docker compose -f "$COMPOSE_FILE" pull
+docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+AFTER=$(get_images)
 
-[ $RCLONE_STATUS -eq 0 ] && [ -z "$DOCKER_CHANGES" ] && [ $DOCKER_STATUS -eq 0 ] && {
-    log "=== Nothing to report, done ==="
-    exit 0
-}
+export DOCKER_CHANGES
+DOCKER_CHANGES=$(diff <(echo "$BEFORE") <(echo "$AFTER") || true)
 
-HOST=$(hostname)
-DATE=$(date '+%Y-%m-%d %H:%M')
-BODY=""
-
-[ -n "$DOCKER_CHANGES" ] && BODY+="=== Docker changes ===\n$DOCKER_CHANGES\n\n"
-[ $DOCKER_STATUS -ne 0 ]  && BODY+="❌ Docker update failed (exit $DOCKER_STATUS)\n\n"
-[ $RCLONE_STATUS -ne 0 ]  && BODY+="❌ rclone backup failed (exit $RCLONE_STATUS)\n\n"
-
-if [ $RCLONE_STATUS -ne 0 ] || [ $DOCKER_STATUS -ne 0 ]; then
-    SUBJECT="❌ Maintenance failed – $HOST $DATE"
-else
-    SUBJECT="🐳 Docker updated – $HOST $DATE"
+if [ -n "$DOCKER_CHANGES" ]; then
+    log "Changes detected, pruning..."
+    docker container prune -f >/dev/null 2>&1
+    docker image prune -f >/dev/null 2>&1
 fi
 
-send_mail "$SUBJECT" "$BODY"
-log "📧 Mail sent: $SUBJECT"
-log "=== Done ==="
+log "=== rclone backup ==="
+rclone_backup.sh
