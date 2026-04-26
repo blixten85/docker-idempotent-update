@@ -1,8 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# shellcheck source=/dev/null
+[ -f /config/backup.conf ] && source /config/backup.conf
+
 BASE_SRC="${RCLONE_SRC:-/data}"
 BASE_DST="${RCLONE_DST:-gdrive:backups}"
+BACKUP_DIRS="${BACKUP_DIRS:-backup backups}"
 EMAIL_TO="${EMAIL_TO:-}"
 DOCKER_CHANGES="${DOCKER_CHANGES:-}"
 
@@ -38,7 +42,12 @@ for APP_DIR in "$BASE_SRC"/*/; do
     while IFS= read -r DIR; do
         [ -d "$DIR" ] || continue
         NAME=$(basename "$DIR")
-        case "${NAME,,}" in backup|backups) ;; *) continue ;; esac
+        NAME_LOWER="${NAME,,}"
+        MATCH=false
+        for BDIR in $BACKUP_DIRS; do
+            [ "${BDIR,,}" = "$NAME_LOWER" ] && MATCH=true && break
+        done
+        $MATCH || continue
 
         DEST="$BASE_DST/$APP/$NAME"
         SYNCED=false

@@ -1,0 +1,11 @@
+# docker-maintenance — rclone backup configuration
+
+# Directory to scan for application backup folders
+# Corresponds to the /data mount in the container (set via DOCKER_DIR in your .env)
+RCLONE_SRC=/data
+
+# Rclone destination (remote:path)
+RCLONE_DST=gdrive:backups
+
+# Folder names to sync (case-insensitive, space-separated)
+BACKUP_DIRS="backup backups"

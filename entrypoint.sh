@@ -1,14 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-IMAGE="ghcr.io/blixten85/docker-idempotent-update:latest"
-MISSING=0
-
 if [ ! -f /config/rclone.conf ]; then
     echo "ERROR: rclone config not found at /config/rclone.conf"
-    echo "       Run: docker run -it --rm -v <your-config-dir>:/config $IMAGE rclone --config /config/rclone.conf config"
+    echo "       Run: docker exec -it docker-maintenance rclone config"
+    echo "       Then: docker restart docker-maintenance"
     echo ""
-    MISSING=1
+    sleep infinity
 fi
 
 if [ ! -f /config/msmtprc ]; then
@@ -17,9 +15,10 @@ if [ ! -f /config/msmtprc ]; then
     echo ""
 fi
 
-if [ "$MISSING" -eq 1 ]; then
-    echo "Fix the above, then run: docker restart docker-maintenance"
-    sleep infinity
+if [ ! -f /config/backup.conf ]; then
+    cp /etc/backup.conf.template /config/backup.conf
+    echo "INFO: Created /config/backup.conf from template — edit it to configure backup settings"
+    echo ""
 fi
 
 ln -sf /config/msmtprc /etc/msmtprc

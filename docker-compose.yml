@@ -7,8 +7,6 @@ services:
     environment:
       COMPOSE_DIR: /compose
       COMPOSE_FILE: /compose/docker-compose.yml
-      RCLONE_SRC: /data
-      RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
       EMAIL_TO: ${EMAIL_TO:-}
       CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
       RCLONE_CONFIG: /config/rclone.conf
