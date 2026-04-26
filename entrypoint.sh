@@ -17,9 +17,6 @@ check() {
 check /config/rclone.conf "rclone config" \
     "Run: docker run -it --rm -v <your-config-dir>:/config $IMAGE rclone --config /config/rclone.conf config"
 
-check /config/docker/config.json "Docker credentials" \
-    "Run 'docker login' on the host, then copy ~/.docker/config.json to <your-config-dir>/docker/config.json"
-
 if [ -n "${EMAIL_TO:-}" ]; then
     check /config/msmtprc "msmtp config" \
         "Create <your-config-dir>/msmtprc — see https://marlam.de/msmtp/msmtprc.html for syntax"

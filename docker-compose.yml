@@ -11,7 +11,6 @@ services:
       RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
       EMAIL_TO: ${EMAIL_TO:-}
       CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
-      DOCKER_CONFIG: /config/docker
       RCLONE_CONFIG: /config/rclone.conf
     security_opt:
       - no-new-privileges:true
