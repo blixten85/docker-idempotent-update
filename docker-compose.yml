@@ -17,5 +17,5 @@ services:
       - ${DOCKER_DIR:-~/.docker}:/docker:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /etc/msmtprc:/etc/msmtprc:ro
-      - ${HOME}/.config/rclone:/root/.config/rclone:ro
-      - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
+      - ${CONFIG_HOME}/.config/rclone:/root/.config/rclone:ro
+      - ${CONFIG_HOME}/.docker/config.json:/root/.docker/config.json:ro
