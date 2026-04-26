@@ -1,75 +1,101 @@
-# 🐳 Docker Idempotent Update
+# 🐳 docker-idempotent-update
 
 ![Build](https://github.com/blixten85/docker-idempotent-update/actions/workflows/build.yml/badge.svg)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/blixten85/docker-idempotent-update?utm_source=oss&utm_medium=github&utm_campaign=blixten85%2Fdocker-idempotent-update&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
-Pull new images and recreate containers — only if changes are detected. Sends an email notification when containers are updated.
+Daily Docker host maintenance in a single container:
 
-## Docker Compose
+1. **Pulls** new images and recreates any containers that changed
+2. **Backs up** app data to Google Drive via rclone
+3. **Emails** a summary — only when something actually happened
 
-```bash
-# Run update
-docker compose run --rm update
+Designed to run unattended via a systemd timer.
 
-# Run rclone backup
-docker compose run --rm rclone-backup
+---
+
+## How it works
+
+`run.sh` is the entrypoint. It runs the two operations in sequence and passes results to the mail step:
+
+```
+run.sh
+  ├── docker compose pull + up   (detects changes via image diff)
+  └── rclone_backup.sh           (syncs backup dirs, sends one mail)
+        ├── 🐳 container updates — always included if any
+        └── ⚠️  backup failures  — included if any, silent on success
 ```
 
-Configure via environment variables or a `.env` file:
+Mail is only sent when containers were updated or a backup failed. If nothing changed, no mail is sent.
+
+---
+
+## Setup
+
+### 1. Configure environment
+
+Create `/home/$USER/.config/docker-maintenance.env`:
 
 ```env
 EMAIL_TO=you@example.com
-COMPOSE_DIR=~/.config/docker
-LOG_DIR=~/.log
 RCLONE_DST=gdrive:backups
-RCLONE_SRC_DIR=~/.docker
-RCLONE_LOG_DIR=~/.rclone/logs
 ```
 
-Run via cron:
+### 2. Configure rclone
+
+Set up a Google Drive remote named `gdrive`:
 
 ```bash
-0 3 * * * cd /path/to/docker-idempotent-update && docker compose run --rm update
+rclone config
 ```
 
-## Docker
+### 3. Backup folder structure
+
+The backup script scans `~/.docker/` and syncs any folder named `backup` or `backups` up to two levels deep:
+
+```
+~/.docker/
+  prowlarr/
+    backups/      →  gdrive:backups/prowlarr/backups/
+  sonarr/
+    config/
+      backup/     →  gdrive:backups/sonarr/backup/
+```
+
+### 4. Install systemd timer
 
 ```bash
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ~/.config/docker:/config:ro \
-  -v ~/.log:/logs \
-  -e COMPOSE_DIR=/config \
-  -e LOG_FILE=/logs/docker-idempotent.log \
-  -e EMAIL_TO=you@example.com \
-  ghcr.io/blixten85/docker-idempotent-update
+sudo cp systemd/docker-maintenance.service /etc/systemd/system/
+sudo cp systemd/docker-maintenance.timer   /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now docker-maintenance.timer
 ```
 
-## Script
+> Edit the `ExecStart` path in `docker-maintenance.service` to match where you cloned this repo.
+
+Run once manually to verify:
 
 ```bash
-chmod +x docker-idempotent-update.sh
-./docker-idempotent-update.sh
+sudo systemctl start docker-maintenance.service
+journalctl -u docker-maintenance.service -f
 ```
+
+---
 
 ## Environment variables
 
-### docker-idempotent-update.sh
-
 | Variable | Default | Description |
 |---|---|---|
+| `EMAIL_TO` | *(unset — no mail)* | Mail recipient |
 | `COMPOSE_DIR` | `~/.config/docker` | Directory containing docker-compose.yml |
 | `COMPOSE_FILE` | `$COMPOSE_DIR/docker-compose.yml` | Full path to compose file |
-| `LOG_FILE` | `~/.log/docker-idempotent.log` | Log file path |
-| `LOCK_FILE` | `~/.log/docker-idempotent.lock` | Lock file path |
-| `EMAIL_TO` | *(unset — no mail)* | Recipient for change notifications |
-
-### rclone_backup.sh
-
-Syncs `backup/` and `backups/` subdirectories to a cloud destination via rclone.
-
-| Variable | Default | Description |
-|---|---|---|
-| `RCLONE_SRC` | `~/.docker` | Source directory to scan |
+| `RCLONE_SRC` | `~/.docker` | Root directory to scan for backup folders |
 | `RCLONE_DST` | `gdrive:backups` | rclone remote destination |
-| `RCLONE_LOGDIR` | `~/.rclone/logs` | Log directory |
+
+---
+
+## Running manually
+
+```bash
+docker compose run --rm maintenance
+```
