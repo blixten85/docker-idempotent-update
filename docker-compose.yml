@@ -16,6 +16,6 @@ services:
       - ${COMPOSE_DIR:-~/.config/docker}:/config:ro
       - ${DOCKER_DIR:-~/.docker}:/docker:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${HOME}/.msmtprc:/root/.msmtprc:ro
+      - /etc/msmtprc:/etc/msmtprc:ro
       - ${HOME}/.config/rclone:/root/.config/rclone:ro
       - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
