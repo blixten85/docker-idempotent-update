@@ -1,0 +1,13 @@
+# msmtp configuration — https://marlam.de/msmtp/
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /dev/stderr
+
+account        default
+host           smtp.example.com
+port           587
+from           user@example.com
+user           user@example.com
+password       changeme
