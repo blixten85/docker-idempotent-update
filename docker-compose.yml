@@ -24,3 +24,4 @@ services:
 networks:
   lsio:
     external: true
+    # If this network does not exist, create it with: docker network create lsio
