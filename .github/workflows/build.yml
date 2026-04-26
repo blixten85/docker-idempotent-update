@@ -6,6 +6,7 @@ on:
     paths:
       - 'Dockerfile'
       - '*.sh'
+      - '*.template'
   release:
     types: [published]
   workflow_dispatch:
