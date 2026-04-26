@@ -6,16 +6,21 @@ services:
     restart: unless-stopped
     environment:
       EMAIL_TO: ${EMAIL_TO}
-      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
+      CRON_SCHEDULE: "0 3 * * *"
       RCLONE_CONFIG: /config/rclone.conf
-      # Option A: manage containers via docker socket only (comment out COMPOSE_FILE below)
-      # Option B: manage containers via compose file (uncomment + uncomment volume below)
+      # Option A: manage containers via compose file (uncomment + uncomment volume below)
       COMPOSE_FILE: /compose/docker-compose.yml
     security_opt:
       - no-new-privileges:true
     volumes:
       - ${DOCKER}/docker-maintenance/config:/config
-      - ${DOCKER}:/data:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Option B: mount compose directory (comment out to use Option A)
+      # Option B: use docker socket (comment out COMPOSE_FILE and ${CONFIG} volume above/below)
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # Option A: mount compose directory (comment out to use Option B)
       - ${CONFIG}:/compose:ro
+    networks:
+      - lsio
+
+networks:
+  lsio:
+    external: true
