@@ -1,0 +1,32 @@
+services:
+  update:
+    image: ghcr.io/blixten85/docker-idempotent-update:latest
+    container_name: docker-idempotent-update
+    pull_policy: always
+    restart: "no"
+    environment:
+      COMPOSE_DIR: /config
+      COMPOSE_FILE: /config/docker-compose.yml
+      LOG_FILE: /logs/docker-idempotent.log
+      LOCK_FILE: /logs/docker-idempotent.lock
+      EMAIL_TO: ${EMAIL_TO:-}
+    volumes:
+      - ${COMPOSE_DIR:-~/.config/docker}:/config:ro
+      - ${LOG_DIR:-~/.log}:/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.msmtprc:/root/.msmtprc:ro
+
+  rclone-backup:
+    image: ghcr.io/blixten85/docker-idempotent-update:latest
+    container_name: rclone-backup
+    pull_policy: always
+    restart: "no"
+    entrypoint: ["/usr/local/bin/rclone_backup.sh"]
+    environment:
+      RCLONE_SRC: /source
+      RCLONE_DST: ${RCLONE_DST:-gdrive:backups}
+      RCLONE_LOGDIR: /logs
+    volumes:
+      - ${RCLONE_SRC_DIR:-~/.docker}:/source:ro
+      - ${RCLONE_LOG_DIR:-~/.rclone/logs}:/logs
+      - ${HOME}/.config/rclone:/root/.config/rclone:ro
