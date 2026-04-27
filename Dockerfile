@@ -1,4 +1,4 @@
-FROM alpine:3.21
+FROM alpine:3.23
 RUN apk add --no-cache bash docker-cli docker-cli-compose msmtp rclone diffutils
 COPY msmtprc.template backup.conf.template /etc/
 COPY entrypoint.sh run.sh rclone_backup.sh /usr/local/bin/
