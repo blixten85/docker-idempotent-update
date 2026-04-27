@@ -1,7 +1,6 @@
-# 🐳 docker-idempotent-update
+# docker-idempotent-update
 
 ![Build](https://github.com/blixten85/docker-idempotent-update/actions/workflows/build.yml/badge.svg)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/blixten85/docker-idempotent-update?utm_source=oss&utm_medium=github&utm_campaign=blixten85%2Fdocker-idempotent-update&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 Daily Docker host maintenance in a single container:
 
