@@ -7,6 +7,12 @@ on:
       - 'Dockerfile'
       - '*.sh'
       - '*.template'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '*.sh'
+      - '*.template'
+      - '.github/workflows/build.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -55,17 +61,45 @@ jobs:
           }
       - name: Validate startup for MODE
         run: |
-          mkdir -p /tmp/cfg
-          touch /tmp/cfg/rclone.conf
+          mkdir -p /tmp/cfg /tmp/data
+          MOUNTS=(-v /tmp/cfg:/config)
+          if [ "$MODE" = "update" ] || [ "$MODE" = "both" ]; then
+            MOUNTS+=(-v /var/run/docker.sock:/var/run/docker.sock)
+          fi
+          if [ "$MODE" = "backup" ] || [ "$MODE" = "both" ]; then
+            touch /tmp/cfg/rclone.conf
+            MOUNTS+=(-v /tmp/data:/data:ro)
+          fi
           out=$(timeout 5 docker run --rm \
             -e MODE="$MODE" \
             -e EMAIL_TO=test@example.com \
-            -v /tmp/cfg:/config \
-            -v /var/run/docker.sock:/var/run/docker.sock \
+            "${MOUNTS[@]}" \
             didu:test 2>&1 || true)
           echo "$out"
           echo "$out" | grep -q "Mode: $MODE" || { echo "startup line missing"; exit 1; }
           echo "$out" | grep -q "Scheduled:" || { echo "never reached crond setup"; exit 1; }
+      - name: Run run.sh with DRY_RUN for MODE
+        run: |
+          MOUNTS=(-v /tmp/cfg:/config)
+          if [ "$MODE" = "update" ] || [ "$MODE" = "both" ]; then
+            MOUNTS+=(-v /var/run/docker.sock:/var/run/docker.sock)
+          fi
+          if [ "$MODE" = "backup" ] || [ "$MODE" = "both" ]; then
+            MOUNTS+=(-v /tmp/data:/data:ro)
+          fi
+          out=$(docker run --rm \
+            --entrypoint /usr/local/bin/run.sh \
+            -e MODE="$MODE" \
+            -e DRY_RUN=true \
+            "${MOUNTS[@]}" \
+            didu:test 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "=== mode: $MODE ===" || { echo "run.sh did not log mode header"; exit 1; }
+          echo "$out" | grep -q "=== send report ===" || { echo "send_report.sh was not invoked"; exit 1; }
+          echo "$out" | grep -q "Status written" || { echo "status.json was not written"; exit 1; }
+          [ -s /tmp/cfg/status.json ] || { echo "status.json missing or empty"; exit 1; }
+          jq -e --arg m "$MODE" '.mode == $m' /tmp/cfg/status.json \
+            || { echo "status.json mode field mismatch"; cat /tmp/cfg/status.json; exit 1; }
 
   build:
     runs-on: ubuntu-latest
