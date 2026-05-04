@@ -6,11 +6,11 @@
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED)](https://www.docker.com/)
 [![CodeRabbit](https://img.shields.io/coderabbit/prs/github/blixten85/docker-idempotent-update)](https://coderabbit.ai)
 
-Daily Docker host maintenance in a single container:
+Daily Docker host maintenance in a single container. Run **either or both** of:
 
-1. **Pulls** new images and recreates any containers that changed
-2. **Backs up** app data to a rclone remote
-3. **Emails** a summary — only when something actually happened
+1. **Update** — pull new images and recreate any containers that changed
+2. **Backup** — sync app data to an rclone remote
+3. **Email** — one combined summary, only when something actually happened
 
 Runs on a schedule via an internal cron daemon. No systemd, no host dependencies beyond Docker itself.
 
@@ -19,15 +19,31 @@ Runs on a schedule via an internal cron daemon. No systemd, no host dependencies
 ## How it works
 
 ```
-entrypoint.sh  (validates config, starts crond)
+entrypoint.sh  (validates config based on MODE, starts crond)
 └── run.sh     (runs daily at 03:00 by default)
-      ├── docker compose pull + up   (or socket-only — see Options)
-      └── rclone_backup.sh
-            ├── syncs backup dirs to rclone remote
-            └── sends one combined mail if anything changed or failed
+      ├── update step    (if MODE = update | both)
+      │     └── docker compose pull + up   (or socket-only — see Options)
+      ├── backup step    (if MODE = backup | both)
+      │     └── rclone sync per backup directory
+      └── send_report.sh
+            └── one combined mail if something changed or failed
 ```
 
 Mail is only sent when containers were updated or a backup failed.
+
+---
+
+## Modes
+
+Set `MODE` to choose which steps run:
+
+| MODE       | Update | Backup | Required config                             |
+|------------|--------|--------|---------------------------------------------|
+| `update`   | ✅     | ❌     | docker socket mount                         |
+| `backup`   | ❌     | ✅     | `rclone.conf`, `backup.conf`                |
+| `both` *(default)* | ✅ | ✅ | docker socket + rclone config               |
+
+`EMAIL_TO` is optional in every mode — without it nothing is mailed but the run still produces a `status.json`.
 
 ---
 
@@ -35,27 +51,26 @@ Mail is only sent when containers were updated or a backup failed.
 
 ### 1. Add the service to your docker-compose.yml
 
-Copy the contents of [`docker-compose.yml`](docker-compose.yml) into your own compose file.  
-Required variables in your `.env`:
+Copy the contents of [`docker-compose.yml`](docker-compose.yml) into your own compose file. Variables in your `.env`:
 
 ```env
 DOCKER=/path/to/your/docker/data    # e.g. /home/user/.docker
 CONFIG=/path/to/your/compose/dir    # e.g. /home/user/.config/docker (Option B only)
-EMAIL_TO=you@example.com
+EMAIL_TO=you@example.com            # optional
 ```
 
 ### 2. Start the container
 
 ```bash
-docker compose up -d maintenance
+docker compose up -d docker-maintenance
 ```
 
 On first start the container will:
-- Create `$DOCKER/docker-maintenance/config/msmtprc` from template
-- Create `$DOCKER/docker-maintenance/config/backup.conf` from template
-- Wait for rclone config (see step 3)
+- Create `$DOCKER/docker-maintenance/config/backup.conf` from template (if MODE includes backup)
+- Create `$DOCKER/docker-maintenance/config/msmtprc` from template (if `EMAIL_TO` is set)
+- Wait for rclone config (see step 3) — backup modes only
 
-### 3. Configure rclone
+### 3. Configure rclone (backup modes only)
 
 ```bash
 docker exec -it docker-maintenance rclone config
@@ -68,11 +83,11 @@ The config is written to `$DOCKER/docker-maintenance/config/rclone.conf`.
 
 All config lives in `$DOCKER/docker-maintenance/config/`:
 
-| File | Purpose |
-|---|---|
-| `rclone.conf` | rclone remote configuration (created via `rclone config`) |
-| `msmtprc` | Mail server settings (created from template) |
-| `backup.conf` | Backup source, destination and folder names (created from template) |
+| File          | Purpose                                       | Created when            |
+|---------------|-----------------------------------------------|-------------------------|
+| `rclone.conf` | rclone remote configuration                   | manually via `rclone config` |
+| `msmtprc`     | Mail server settings                          | when `EMAIL_TO` is set  |
+| `backup.conf` | Backup source, destination and folder names  | when MODE includes backup |
 
 After editing, apply changes with:
 
@@ -82,23 +97,52 @@ docker restart docker-maintenance
 
 ---
 
-## Options
+## Examples
+
+### Update only (no backup, no rclone needed)
+
+```yaml
+environment:
+  MODE: update
+  COMPOSE_FILE: /compose/docker-compose.yml   # optional, see Options
+volumes:
+  - ${DOCKER}/docker-maintenance/config:/config
+  - /var/run/docker.sock:/var/run/docker.sock
+  - ${CONFIG}:/compose:ro                     # only with COMPOSE_FILE
+```
+
+### Backup only (no docker socket needed)
+
+```yaml
+environment:
+  MODE: backup
+  EMAIL_TO: ${EMAIL_TO}
+volumes:
+  - ${DOCKER}/docker-maintenance/config:/config
+  - ${DOCKER}:/data:ro                        # the directory to back up
+```
+
+### Both (default)
+
+See the top-level [`docker-compose.yml`](docker-compose.yml).
+
+---
+
+## Options (update step)
 
 ### Option A — Docker socket (no compose file needed)
 
-The default. Pulls images for all running containers and restarts any that were updated.  
-No additional volume mount required.
+Pulls images for all running containers and restarts any that were updated. Leave `COMPOSE_FILE` unset.
 
 ### Option B — Compose file (recommended)
 
-Runs `docker compose pull` + `up -d --remove-orphans`. Requires mounting your compose directory.  
-Uncomment `COMPOSE_FILE` and the `${CONFIG}:/compose:ro` volume in your compose file.
+Runs `docker compose pull` + `up -d --remove-orphans`. Set `COMPOSE_FILE` and mount your compose directory at `/compose:ro`.
 
 ---
 
 ## Backup folder structure
 
-`backup.conf` controls which directory is scanned and which folder names are synced.  
+`backup.conf` controls which directory is scanned and which folder names are synced.
 Default: scans `$DOCKER` for folders named `backup` or `backups` (case-insensitive) up to two levels deep.
 
 ```
@@ -114,9 +158,12 @@ $DOCKER/
 
 ## Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `EMAIL_TO` | *(required)* | Mail recipient |
-| `CRON_SCHEDULE` | `0 3 * * *` | When to run |
-| `RCLONE_CONFIG` | `/config/rclone.conf` | rclone config path inside container |
-| `COMPOSE_FILE` | *(unset)* | Full path to compose file inside container (Option B) |
+| Variable          | Default        | Description                                         |
+|-------------------|----------------|-----------------------------------------------------|
+| `MODE`            | `both`         | `update`, `backup`, or `both`                       |
+| `EMAIL_TO`        | *(unset)*      | Mail recipient — no mail sent if empty              |
+| `CRON_SCHEDULE`   | `0 3 * * *`    | When to run                                         |
+| `DRY_RUN`         | `false`        | If `true`, log actions without making changes       |
+| `RCLONE_CONFIG`   | `/config/rclone.conf` | rclone config path inside container          |
+| `COMPOSE_FILE`    | *(unset)*      | Full path to compose file inside container (Option B) |
+| `COMPOSE_ENV_FILE`| *(unset)*      | Path to .env file passed to `docker compose --env-file` |
