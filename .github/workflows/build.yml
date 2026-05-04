@@ -19,8 +19,57 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - name: shellcheck
+        run: shellcheck entrypoint.sh run.sh rclone_backup.sh send_report.sh
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        mode: [update, backup, both]
+    env:
+      MODE: ${{ matrix.mode }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - name: Build image
+        run: docker build -t didu:test .
+      - name: Reject invalid MODE
+        run: |
+          set +e
+          out=$(docker run --rm -e MODE=invalid didu:test 2>&1)
+          rc=$?
+          set -e
+          echo "$out"
+          if [ $rc -eq 0 ]; then
+            echo "invalid MODE was not rejected (exit 0)"
+            exit 1
+          fi
+          echo "$out" | grep -q "ERROR: invalid MODE" || {
+            echo "expected ERROR message not found"
+            exit 1
+          }
+      - name: Validate startup for MODE
+        run: |
+          mkdir -p /tmp/cfg
+          touch /tmp/cfg/rclone.conf
+          out=$(timeout 5 docker run --rm \
+            -e MODE="$MODE" \
+            -e EMAIL_TO=test@example.com \
+            -v /tmp/cfg:/config \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            didu:test 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "Mode: $MODE" || { echo "startup line missing"; exit 1; }
+          echo "$out" | grep -q "Scheduled:" || { echo "never reached crond setup"; exit 1; }
+
   build:
     runs-on: ubuntu-latest
+    needs: smoke
     permissions:
       contents: read
       packages: write

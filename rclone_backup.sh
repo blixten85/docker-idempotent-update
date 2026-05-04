@@ -1,14 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
+# Backs up directories matching $BACKUP_DIRS under $BASE_SRC to $BASE_DST.
+# Writes the names of failed backups (one per line) to $BACKUP_FAILURES_FILE
+# if set. Mail reporting is handled by send_report.sh.
+
 # shellcheck source=/dev/null
 [ -f /config/backup.conf ] && source /config/backup.conf
 
 BASE_SRC="${RCLONE_SRC:-/data}"
 BASE_DST="${RCLONE_DST:-gdrive:backups}"
 BACKUP_DIRS="${BACKUP_DIRS:-backup backups}"
-EMAIL_TO="${EMAIL_TO:-}"
-DOCKER_CHANGES="${DOCKER_CHANGES:-}"
+DRY_RUN="${DRY_RUN:-false}"
+FAILURES_FILE="${BACKUP_FAILURES_FILE:-}"
 
 RCLONE_FLAGS=(
   --fast-list
@@ -24,13 +28,7 @@ RCLONE_FLAGS=(
   --delete-during
 )
 
-DRY_RUN="${DRY_RUN:-false}"
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
-
-send_mail() {
-    [ -n "$EMAIL_TO" ] || return 0
-    echo -e "Subject: $1\n\n$2" | msmtp "$EMAIL_TO" 2>/dev/null || true
-}
 
 FAILURES=()
 
@@ -57,14 +55,14 @@ for APP_DIR in "$BASE_SRC"/*/; do
             log "[dry-run] would sync: $DIR -> $DEST"
             SYNCED=true
         else
-        for i in 1 2 3; do
-            if rclone sync "$DIR" "$DEST" "${RCLONE_FLAGS[@]}" 2>&1; then
-                SYNCED=true
-                break
-            fi
-            log "retry $i: $APP/$NAME"
-            sleep 15
-        done
+            for i in 1 2 3; do
+                if rclone sync "$DIR" "$DEST" "${RCLONE_FLAGS[@]}" 2>&1; then
+                    SYNCED=true
+                    break
+                fi
+                log "retry $i: $APP/$NAME"
+                sleep 15
+            done
         fi
 
         if $SYNCED; then
@@ -79,28 +77,6 @@ done
 
 log "=== backup complete ==="
 
-[ -z "$DOCKER_CHANGES" ] && [ ${#FAILURES[@]} -eq 0 ] && exit 0
-
-HOST=$(hostname)
-DATE=$(date '+%Y-%m-%d')
-BODY=""
-
-if [ -n "$DOCKER_CHANGES" ]; then
-    BODY+="=== Container updates ===\n$DOCKER_CHANGES\n\n"
+if [ -n "$FAILURES_FILE" ] && [ ${#FAILURES[@]} -gt 0 ]; then
+    printf '%s\n' "${FAILURES[@]}" > "$FAILURES_FILE"
 fi
-
-if [ ${#FAILURES[@]} -gt 0 ]; then
-    BODY+="=== Backup failures ===\n"
-    for F in "${FAILURES[@]}"; do BODY+="  ✗ $F\n"; done
-fi
-
-if [ ${#FAILURES[@]} -gt 0 ] && [ -n "$DOCKER_CHANGES" ]; then
-    SUBJECT="🐳 Docker updated + ⚠️ backup failed – $HOST $DATE"
-elif [ ${#FAILURES[@]} -gt 0 ]; then
-    SUBJECT="⚠️ Backup failed – $HOST $DATE"
-else
-    SUBJECT="🐳 Docker updated – $HOST $DATE"
-fi
-
-send_mail "$SUBJECT" "$BODY"
-log "📧 Mail sent: $SUBJECT"
