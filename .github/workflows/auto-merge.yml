@@ -61,3 +61,13 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
+
+  codex:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'codex/')
+    steps:
+      - name: Auto-merge Codex AI PRs once checks pass
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
