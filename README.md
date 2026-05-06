@@ -1,10 +1,10 @@
 # docker-idempotent-update
 
-[![Build](https://github.com/blixten85/docker-idempotent-update/actions/workflows/build.yml/badge.svg)](https://github.com/blixten85/docker-idempotent-update/actions/workflows/build.yml)
-[![Release](https://img.shields.io/github/v/release/blixten85/docker-idempotent-update)](https://github.com/blixten85/docker-idempotent-update/releases)
+[![Build](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/build.yml/badge.svg)](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/API-Apoteket/docker-idempotent-update)](https://github.com/API-Apoteket/docker-idempotent-update/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED)](https://www.docker.com/)
-[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/blixten85/docker-idempotent-update)](https://coderabbit.ai)
+[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/API-Apoteket/docker-idempotent-update)](https://coderabbit.ai)
 
 Daily Docker host maintenance in a single container. Run **either or both** of:
 
