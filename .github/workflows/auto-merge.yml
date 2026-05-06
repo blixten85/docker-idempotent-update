@@ -42,11 +42,9 @@ jobs:
 
   security-autofix:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.head_ref, 'alert-autofix') ||
-      contains(github.head_ref, 'copilot')
+    if: contains(github.head_ref, 'alert-autofix')
     steps:
-      - name: Enable auto-merge for security fixes
+      - name: Enable auto-merge for CodeQL security fixes
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -67,6 +65,16 @@ jobs:
     if: startsWith(github.head_ref, 'codex/')
     steps:
       - name: Auto-merge Codex AI PRs once checks pass
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+
+  copilot:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'copilot/')
+    steps:
+      - name: Auto-merge Copilot AI PRs once checks pass
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

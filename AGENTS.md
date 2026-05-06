@@ -1,9 +1,10 @@
 # AI Agent Coordination
 
-This repository is maintained with help from two AI agents:
+This repository is maintained with help from three AI agents:
 
 - **Claude Code** (Anthropic) — scheduled weekly reviews, CI/CD, infra, Dependabot/security fixes
 - **Codex** (OpenAI) — interactive feature work and bug fixes invoked by the maintainer
+- **Copilot** (GitHub) — interactive feature work and bug fixes invoked by the maintainer
 
 ## Branch Naming
 
@@ -11,8 +12,9 @@ This repository is maintained with help from two AI agents:
 |---|---|---|
 | Claude | `claude/` | `claude/fix-backup-logic` |
 | Codex | `codex/` | `codex/add-slack-notification` |
+| Copilot | `copilot/` | `copilot/add-slack-notification` |
 
-Both prefixes auto-merge via the `auto-merge.yml` workflow once CI passes.
+All three prefixes auto-merge via the `auto-merge.yml` workflow once CI passes.
 
 ## Ownership Map
 
@@ -40,6 +42,7 @@ Before opening a PR:
 
 - Claude PRs: `ai:claude`
 - Codex PRs: `ai:codex`
+- Copilot PRs: `ai:copilot`
 
 ## Standards
 
