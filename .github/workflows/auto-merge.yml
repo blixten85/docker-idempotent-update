@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,7 +47,12 @@ jobs:
       contains(github.head_ref, 'copilot')
     steps:
       - name: Enable auto-merge for security fixes
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        run: |
+          for i in 1 2 3 4 5; do
+            gh pr merge --auto --squash --delete-branch "$PR_URL" && break
+            echo "attempt $i failed, retrying in 60s..."
+            sleep 60
+          done
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
