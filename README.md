@@ -1,11 +1,11 @@
 # docker-idempotent-update
 
-[![Build](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/build.yml/badge.svg)](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/build.yml)
-[![CodeQL](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/codeql.yml/badge.svg)](https://github.com/API-Apoteket/docker-idempotent-update/actions/workflows/codeql.yml)
-[![Release](https://img.shields.io/github/v/release/API-Apoteket/docker-idempotent-update)](https://github.com/API-Apoteket/docker-idempotent-update/releases)
-[![Image](https://ghcr-badge.egpl.dev/api-apoteket/docker-idempotent-update/size?color=blue&label=image)](https://github.com/API-Apoteket/docker-idempotent-update/pkgs/container/docker-idempotent-update)
+[![Build](https://github.com/api-apoteket/docker-idempotent-update/actions/workflows/build.yml/badge.svg)](https://github.com/api-apoteket/docker-idempotent-update/actions/workflows/build.yml)
+[![CodeQL](https://github.com/api-apoteket/docker-idempotent-update/actions/workflows/codeql.yml/badge.svg)](https://github.com/api-apoteket/docker-idempotent-update/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/api-apoteket/docker-idempotent-update)](https://github.com/api-apoteket/docker-idempotent-update/releases)
+[![Image](https://ghcr-badge.egpl.dev/api-apoteket/docker-idempotent-update/size?color=blue&label=image)](https://github.com/api-apoteket/docker-idempotent-update/pkgs/container/docker-idempotent-update)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/API-Apoteket/docker-idempotent-update)](https://coderabbit.ai)
+[![CodeRabbit](https://img.shields.io/coderabbit/prs/github/api-apoteket/docker-idempotent-update)](https://coderabbit.ai)
 ![Downloads](https://img.shields.io/github/downloads/api-apoteket/docker-idempotent-update/total)
 
 Daily Docker host maintenance in a single container. Run **either or both** of:
