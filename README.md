@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED)](https://www.docker.com/)
 [![CodeRabbit](https://img.shields.io/coderabbit/prs/github/API-Apoteket/docker-idempotent-update)](https://coderabbit.ai)
+![Downloads](https://img.shields.io/github/downloads/api-apoteket/docker-dempotent-update/total)
 
 Daily Docker host maintenance in a single container. Run **either or both** of:
 
