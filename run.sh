@@ -35,7 +35,7 @@ if $NEEDS_UPDATE; then
             log "[dry-run] would run: docker compose -f $COMPOSE_FILE $ENV_FILE_ARG pull && up -d --remove-orphans"
         else
             # shellcheck disable=SC2086
-            docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG pull
+            docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG pull --ignore-pull-failures
             # shellcheck disable=SC2086
             docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG up -d --remove-orphans
         fi
