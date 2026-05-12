@@ -32,10 +32,22 @@ if $NEEDS_UPDATE; then
         fi
 
         if [ "$DRY_RUN" = "true" ]; then
-            log "[dry-run] would run: docker compose -f $COMPOSE_FILE $ENV_FILE_ARG pull && up -d --remove-orphans"
+            log "[dry-run] would run: docker compose -f $COMPOSE_FILE $ENV_FILE_ARG pull (sequential) && up -d --remove-orphans"
         else
+            # Pull one service at a time to avoid burst rate limits on registries like lscr.io.
             # shellcheck disable=SC2086
-            docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG pull --ignore-pull-failures
+            docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG config --services | while IFS= read -r svc; do
+                pulled=false
+                for attempt in 1 2 3; do
+                    # shellcheck disable=SC2086
+                    if docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG pull "$svc"; then
+                        pulled=true
+                        break
+                    fi
+                    [ "$attempt" -lt 3 ] && sleep $((attempt * 5))
+                done
+                $pulled || log "WARN: failed to pull $svc after 3 attempts"
+            done
             # shellcheck disable=SC2086
             docker compose -f "$COMPOSE_FILE" $ENV_FILE_ARG up -d --remove-orphans
         fi
