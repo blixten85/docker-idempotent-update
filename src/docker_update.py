@@ -60,9 +60,7 @@ def _compose_update(cfg: Config) -> None:
     for svc in result.stdout.splitlines():
         for attempt in range(1, 4):
             try:
-                subprocess.run(
-                    base_cmd + ["pull", svc], check=True, cwd=compose_dir
-                )
+                subprocess.run(base_cmd + ["pull", svc], check=True, cwd=compose_dir)
                 break
             except subprocess.CalledProcessError:
                 if attempt < 3:
@@ -111,11 +109,15 @@ def _socket_update(cfg: Config) -> list[str]:
             text=True,
         ).stdout.strip()
         if latest and running != latest:
-            name = subprocess.run(
-                ["docker", "inspect", "--format={{.Name}}", cid],
-                capture_output=True,
-                text=True,
-            ).stdout.strip().lstrip("/")
+            name = (
+                subprocess.run(
+                    ["docker", "inspect", "--format={{.Name}}", cid],
+                    capture_output=True,
+                    text=True,
+                )
+                .stdout.strip()
+                .lstrip("/")
+            )
             subprocess.run(["docker", "restart", cid], capture_output=True)
             log.info("Restarted: %s", name)
             updated.append(name)
@@ -126,8 +128,7 @@ def _socket_update(cfg: Config) -> list[str]:
 def _diff(before: list[str], after: list[str]) -> str:
     before_set = set(before)
     after_set = set(after)
-    lines = (
-        [f"< {line}" for line in sorted(before_set - after_set)]
-        + [f"> {line}" for line in sorted(after_set - before_set)]
-    )
+    lines = [f"< {line}" for line in sorted(before_set - after_set)] + [
+        f"> {line}" for line in sorted(after_set - before_set)
+    ]
     return "\n".join(lines)

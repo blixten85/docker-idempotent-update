@@ -7,9 +7,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def send_report(
-    email_to: str, docker_changes: str, backup_failures: list[str]
-) -> None:
+def send_report(email_to: str, docker_changes: str, backup_failures: list[str]) -> None:
     if not email_to or not Path("/etc/msmtprc").exists():
         return
     if not docker_changes and not backup_failures:
