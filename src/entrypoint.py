@@ -13,10 +13,12 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+_VALID_MODES = ("update", "backup", "both")
+
 
 def main() -> None:
     mode = os.environ.get("MODE", "both")
-    if mode not in ("update", "backup", "both"):
+    if mode not in _VALID_MODES:
         log.error("Invalid MODE=%r — must be one of: update, backup, both", mode)
         sys.exit(1)
 
@@ -55,7 +57,7 @@ def main() -> None:
     msmtprc = Path("/config/msmtprc")
     if msmtprc.exists():
         etc_msmtprc = Path("/etc/msmtprc")
-        if not etc_msmtprc.exists():
+        if not etc_msmtprc.exists(follow_symlinks=False):
             etc_msmtprc.symlink_to(msmtprc)
 
     schedule = os.environ.get("CRON_SCHEDULE", "0 3 * * *")
