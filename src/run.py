@@ -57,8 +57,11 @@ def _write_status(
         "backup_failures": backup_failures,
         "docker_changes": docker_changes,
     }
-    cfg.status_file.write_text(json.dumps(status, indent=2))
-    log.info("Status written to %s", cfg.status_file)
+    try:
+        cfg.status_file.write_text(json.dumps(status, indent=2))
+        log.info("Status written to %s", cfg.status_file)
+    except OSError as exc:
+        log.error("Failed to write status file: %s", exc)
 
 
 if __name__ == "__main__":

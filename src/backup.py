@@ -60,13 +60,13 @@ def run_backup(cfg: Config) -> list[str]:
                     synced = True
                     break
                 except subprocess.CalledProcessError:
-                    log.info("retry %d: %s/%s", attempt, app, candidate.name)
+                    log.warning("retry %d: %s/%s", attempt, app, candidate.name)
                     time.sleep(15)
 
             if synced:
                 log.info("ok: %s/%s", app, candidate.name)
             else:
-                log.info("FAILED: %s/%s", app, candidate.name)
+                log.error("FAILED: %s/%s", app, candidate.name)
                 failures.append(f"{app}/{candidate.name}")
 
     log.info("=== backup complete ===")
