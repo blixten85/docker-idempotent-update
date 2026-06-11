@@ -58,6 +58,9 @@ def _compose_update(cfg: Config) -> list[str]:
         cwd=compose_dir,
     )
     services = result.stdout.splitlines()
+
+    before_images = _compose_image_snapshot(base_cmd, compose_dir)
+
     for svc in services:
         for attempt in range(1, 4):
             try:
@@ -72,7 +75,24 @@ def _compose_update(cfg: Config) -> list[str]:
     subprocess.run(
         base_cmd + ["up", "-d", "--remove-orphans"], check=True, cwd=compose_dir
     )
-    return services
+
+    after_images = _compose_image_snapshot(base_cmd, compose_dir)
+    return [svc for svc in services if after_images.get(svc) != before_images.get(svc)]
+
+
+def _compose_image_snapshot(base_cmd: list[str], compose_dir: str) -> dict[str, str]:
+    result = subprocess.run(
+        base_cmd + ["images", "--format", "{{.Service}}\t{{.ID}}"],
+        capture_output=True,
+        text=True,
+        cwd=compose_dir,
+    )
+    snapshot: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        parts = line.split("\t", 1)
+        if len(parts) == 2:
+            snapshot[parts[0].strip()] = parts[1].strip()
+    return snapshot
 
 
 def _socket_update(cfg: Config) -> list[str]:
