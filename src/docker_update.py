@@ -1,3 +1,4 @@
+import json
 import logging
 import subprocess
 import time
@@ -34,6 +35,8 @@ def _ps_snapshot() -> list[str]:
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"docker ps failed: {result.stderr.strip()}")
     return sorted(result.stdout.splitlines())
 
 
@@ -142,11 +145,66 @@ def _socket_update(cfg: Config) -> list[str]:
                 .stdout.strip()
                 .lstrip("/")
             )
-            subprocess.run(["docker", "restart", cid], capture_output=True)
-            log.info("Restarted: %s", name)
-            updated.append(name)
+            if _recreate_container(cid, image, name):
+                log.info("Recreated: %s", name)
+                updated.append(name)
+            else:
+                log.warning("Failed to recreate: %s", name)
 
     return updated
+
+
+def _recreate_container(cid: str, image: str, name: str) -> bool:
+    result = subprocess.run(["docker", "inspect", cid], capture_output=True, text=True)
+    if result.returncode != 0:
+        return False
+    try:
+        info = json.loads(result.stdout)[0]
+    except (ValueError, IndexError):
+        return False
+
+    hc = info.get("HostConfig") or {}
+    container_cfg = info.get("Config") or {}
+
+    cmd = ["docker", "run", "--detach", "--name", name]
+
+    rp = hc.get("RestartPolicy") or {}
+    rp_name = rp.get("Name") or "no"
+    if rp_name and rp_name != "no":
+        retries = rp.get("MaximumRetryCount") or 0
+        if rp_name == "on-failure" and retries:
+            cmd += ["--restart", f"on-failure:{retries}"]
+        else:
+            cmd += ["--restart", rp_name]
+
+    nm = hc.get("NetworkMode") or ""
+    if nm and nm not in ("default", "bridge"):
+        cmd += ["--network", nm]
+
+    for env_var in container_cfg.get("Env") or []:
+        cmd += ["-e", env_var]
+
+    for bind in hc.get("Binds") or []:
+        cmd += ["-v", bind]
+
+    for cport, bindings in (hc.get("PortBindings") or {}).items():
+        for b in bindings or []:
+            hip = b.get("HostIp", "")
+            hport = b.get("HostPort", "")
+            cmd += ["-p", (f"{hip}:{hport}:{cport}" if hip else f"{hport}:{cport}")]
+
+    for k, v in (container_cfg.get("Labels") or {}).items():
+        cmd += ["-l", f"{k}={v}"]
+
+    cmd.append(image)
+
+    subprocess.run(["docker", "stop", cid], capture_output=True)
+    subprocess.run(["docker", "rm", cid], capture_output=True)
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        log.error("Failed to recreate %s: %s", name, r.stderr.strip())
+        return False
+    return True
 
 
 def _diff(before: list[str], after: list[str]) -> str:
