@@ -62,7 +62,9 @@ jobs:
     if: startsWith(github.head_ref, 'claude/') && !github.event.pull_request.draft
     steps:
       - name: Auto-merge Claude AI PRs once checks pass
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        run: |
+          gh pr ready "$PR_URL" || true
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
@@ -72,7 +74,9 @@ jobs:
     if: startsWith(github.head_ref, 'codex/') && !github.event.pull_request.draft
     steps:
       - name: Auto-merge Codex AI PRs once checks pass
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        run: |
+          gh pr ready "$PR_URL" || true
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
