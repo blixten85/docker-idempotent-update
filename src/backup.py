@@ -35,6 +35,10 @@ def run_backup(cfg: Config) -> list[str]:
 
     log.info("=== backup start: %s -> %s ===", cfg.rclone_src, cfg.rclone_dst)
 
+    if not base_src.is_dir():
+        log.error("Backup source %s does not exist or is not a directory", base_src)
+        return [f"<source {base_src} missing>"]
+
     for app_dir in sorted(base_src.iterdir()):
         if not app_dir.is_dir():
             continue
@@ -44,7 +48,7 @@ def run_backup(cfg: Config) -> list[str]:
             if candidate.name.lower() not in cfg.backup_dirs:
                 continue
 
-            dest = f"{cfg.rclone_dst}/{app}/{candidate.name}"
+            dest = f"{cfg.rclone_dst}/{app}/{candidate.relative_to(app_dir)}"
 
             if cfg.dry_run:
                 log.info("[dry-run] would sync: %s -> %s", candidate, dest)
@@ -61,13 +65,14 @@ def run_backup(cfg: Config) -> list[str]:
                     break
                 except subprocess.CalledProcessError:
                     log.warning("retry %d: %s/%s", attempt, app, candidate.name)
-                    time.sleep(15)
+                    if attempt < 3:
+                        time.sleep(15)
 
             if synced:
                 log.info("ok: %s/%s", app, candidate.name)
             else:
                 log.error("FAILED: %s/%s", app, candidate.name)
-                failures.append(f"{app}/{candidate.name}")
+                failures.append(f"{app}/{candidate.relative_to(app_dir)}")
 
     log.info("=== backup complete ===")
     return failures
