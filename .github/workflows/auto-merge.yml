@@ -2,7 +2,7 @@ name: Bot Auto-Merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: write
@@ -19,7 +19,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-merge all github_actions updates (no build triggered)
+      - name: Auto-merge github_actions updates
         if: |
           steps.metadata.outputs.package-ecosystem == 'github_actions' && (
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
@@ -30,7 +30,7 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ github.token }}
 
-      - name: Auto-merge patch and minor updates (other ecosystems — wait for checks)
+      - name: Auto-merge patch and minor updates (other ecosystems)
         if: |
           steps.metadata.outputs.package-ecosystem != 'github_actions' && (
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
@@ -42,9 +42,7 @@ jobs:
 
   security-autofix:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.head_ref, 'alert-autofix') ||
-      contains(github.head_ref, 'copilot')
+    if: contains(github.head_ref, 'alert-autofix')
     steps:
       - name: Enable auto-merge for security fixes
         run: |
@@ -74,6 +72,18 @@ jobs:
     if: startsWith(github.head_ref, 'codex/')
     steps:
       - name: Auto-merge Codex AI PRs once checks pass
+        run: |
+          gh pr ready "$PR_URL" || true
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+
+  copilot:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'copilot/')
+    steps:
+      - name: Auto-merge Copilot PRs once checks pass
         run: |
           gh pr ready "$PR_URL" || true
           gh pr merge --auto --squash --delete-branch "$PR_URL"
