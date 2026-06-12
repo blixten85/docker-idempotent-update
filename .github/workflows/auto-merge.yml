@@ -2,7 +2,7 @@ name: Bot Auto-Merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened, closed, ready_for_review]
 
 permissions:
   contents: write
@@ -59,7 +59,7 @@ jobs:
 
   claude:
     runs-on: ubuntu-latest
-    if: startsWith(github.head_ref, 'claude/')
+    if: startsWith(github.head_ref, 'claude/') && !github.event.pull_request.draft
     steps:
       - name: Auto-merge Claude AI PRs once checks pass
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
@@ -69,7 +69,7 @@ jobs:
 
   codex:
     runs-on: ubuntu-latest
-    if: startsWith(github.head_ref, 'codex/')
+    if: startsWith(github.head_ref, 'codex/') && !github.event.pull_request.draft
     steps:
       - name: Auto-merge Codex AI PRs once checks pass
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
