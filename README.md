@@ -1,7 +1,6 @@
 # docker-idempotent-update
 
 [![Release](https://img.shields.io/github/v/release/blixten85/docker-idempotent-update)](https://github.com/blixten85/docker-idempotent-update/releases)
-[![Image](https://ghcr-badge.egpl.dev/blixten85/docker-idempotent-update/size?color=blue&label=image)](https://github.com/blixten85/docker-idempotent-update/pkgs/container/docker-idempotent-update)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Daily Docker host maintenance in a single container. Run **either or both** of:
