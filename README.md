@@ -1,7 +1,8 @@
 # docker-idempotent-update
 
+[![CI](https://github.com/blixten85/docker-idempotent-update/actions/workflows/ci.yml/badge.svg)](https://github.com/blixten85/docker-idempotent-update/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/blixten85/docker-idempotent-update)](https://github.com/blixten85/docker-idempotent-update/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/blixten85/docker-idempotent-update)](LICENSE)
 
 Daily Docker host maintenance in a single container. Run **either or both** of:
 
