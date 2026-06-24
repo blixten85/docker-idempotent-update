@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from .backup import run_backup
 from .config import Config
 from .docker_update import run_update
+from .github_report import report_error_to_github
 from .report import send_report
 
 logging.basicConfig(
@@ -65,4 +66,11 @@ def _write_status(
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        log.exception("Unhandled error in daily run")
+        report_error_to_github(
+            "blixten85/docker-idempotent-update", "Daglig körning kraschade", exc
+        )
+        raise

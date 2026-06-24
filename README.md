@@ -165,3 +165,4 @@ $DOCKER/
 | `RCLONE_CONFIG`   | `/config/rclone.conf` | rclone config path inside container          |
 | `COMPOSE_FILE`    | *(unset)*      | Full path to compose file inside container (Option B) |
 | `COMPOSE_ENV_FILE`| *(unset)*      | Path to .env file passed to `docker compose --env-file` |
+| `GITHUB_ERROR_REPORT_TOKEN` | *(unset)* | Fine-grained PAT (Issues: Write) — if set, an unhandled crash opens a `@claude`-tagged GitHub issue with redacted details instead of failing silently |
