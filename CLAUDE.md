@@ -28,3 +28,8 @@ msmtprc.template
 - All secrets via environment variables — never hardcoded
 - No third-party Python packages — stdlib only
 - Test changes with `docker compose run --rm` before committing
+- An unhandled exception in `run.py`'s `main()` calls
+  `report_error_to_github()` (`src/github_report.py`, stdlib-only/urllib
+  per the rule above) — best-effort, opens a `@claude`-tagged GitHub issue
+  with secrets/emails/paths redacted if `GITHUB_ERROR_REPORT_TOKEN` is
+  set, no-ops otherwise
